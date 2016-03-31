@@ -1,6 +1,5 @@
-from baterry_charge import battery_charge
+from batterry_charge import *
 
-battery_status = battery_charge.get_battery_status()
-battery_percentage = battery_charge.get_battery_percentage()
+battery_percentage, battery_status = battery_charge.get_battery_charge()
 
 print("{0} {1}".format(battery_percentage, battery_status.value))

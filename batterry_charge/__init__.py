@@ -1,1 +1,1 @@
-__all__ = ['battery_charge', 'batter_status']
+__all__ = ['battery_charge', 'battery_status']
