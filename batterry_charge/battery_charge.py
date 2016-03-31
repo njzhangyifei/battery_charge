@@ -1,13 +1,7 @@
 #!/usr/bin/env python3
 
-from enum import Enum
 import sys
-
-
-class BatteryStatus(Enum):
-    discharging = "discharging"
-    charging = "charging"
-    ac_power = "ac"
+from .battery_status import BatteryStatus
 
 
 class BatteryCharge:
@@ -22,17 +16,35 @@ class BatteryChargeMac(BatteryCharge):
     def __init__(self):
         super().__init__()
         import subprocess
-        p = subprocess.Popen(["ioreg", "-rc", "AppleSmartBattery"],
-                             stdout=subprocess.PIPE)
+        import re
+        rtn_val = subprocess.check_output(["ioreg", "-r", "-w0", "-cAppleSmartBattery"]).splitlines()
+        stdout_encoding = sys.stdout.encoding
         self.battery_info = None
-        rtn_val = p.communicate(timeout=0.1)[0]
         if rtn_val:
-            self.battery_info = rtn_val.splitlines()
+            # parse the ioreg stuff
+            rtn_val = [l.decode(stdout_encoding).strip() for l in rtn_val]
+            battery_info = dict()
+            for line in rtn_val:
+                re_match = re.match(r'.*"(.+)" = (.+)', line)
+                if not re_match:
+                    continue
+                battery_info.update(
+                    {re_match.group(1): re_match.group(2)}
+                )
+            self.battery_info = battery_info
 
     def get_battery_charge(self):
         if not self.battery_info:
             return None
-        max_capacity = self.battery_info
+        max_capacity = self.battery_info["MaxCapacity"]
+        current_capacity = self.battery_info["CurrentCapacity"]
+        if self.battery_info["IsCharging"] == "Yes":
+            status = BatteryStatus.charging
+        elif self.battery_info["ExternalChargeCapable"] == "Yes":
+            status = BatteryStatus.ac_power
+        else:
+            status = BatteryStatus.discharging
+        return round(float(current_capacity) / float(max_capacity) * 100), status
 
 
 class BatteryChargeWin(BatteryCharge):
@@ -81,9 +93,9 @@ def get_battery_charge():
         pass
     elif platform == "darwin":
         # OS X
-        pass
+        battery_charge = BatteryChargeMac()
     elif platform == "win32":
-        # windows
+        # window
         battery_charge = BatteryChargeWin()
     if not battery_charge:
         return None
