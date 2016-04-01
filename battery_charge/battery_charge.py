@@ -12,6 +12,41 @@ class BatteryCharge:
         pass
 
 
+class BatteryChargeLinux(BatteryCharge):
+    def __init__(self):
+        super().__init__()
+        import subprocess
+        import re
+        command = "upower -i $(upower -e | grep BAT) | grep -E \"state|to\\ full|percentage\""
+        rtn_val = subprocess.check_output(["/bin/bash", "-c", command]).splitlines()
+        stdout_encoding = sys.stdout.encoding
+        self.upower_info = None
+        if rtn_val:
+            rtn_val = [l.decode(stdout_encoding).strip() for l in rtn_val]
+            upower_info = dict()
+            for line in rtn_val:
+                re_match = re.match(r'([a-zA-Z]+):(.+)', line)
+                if not re_match:
+                    continue
+                upower_info.update(
+                    {re_match.group(1).strip(): re_match.group(2).strip()}
+                )
+            self.upower_info = upower_info
+
+    def get_battery_charge(self):
+        if not self.upower_info:
+            return None
+        upower_state = self.upower_info["state"]
+        percentage = int(self.upower_info["percentage"][:-1])
+        if upower_state == "discharging":
+            status = BatteryStatus.discharging
+        elif upower_state == "charging":
+            status = BatteryStatus.charging
+        else:
+            status = BatteryStatus.ac_power
+        return percentage, status
+
+
 class BatteryChargeMac(BatteryCharge):
     def __init__(self):
         super().__init__()
@@ -90,7 +125,7 @@ def get_battery_charge():
     battery_charge = None
     if platform == "linux" or platform == "linux2":
         # linux
-        pass
+        battery_charge = BatteryChargeLinux()
     elif platform == "darwin":
         # OS X
         battery_charge = BatteryChargeMac()

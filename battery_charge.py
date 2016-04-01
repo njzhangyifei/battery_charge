@@ -1,4 +1,5 @@
-from batterry_charge import *
+#!/usr/bin/env python3
+from battery_charge import *
 
 battery_percentage, battery_status = battery_charge.get_battery_charge()
 
