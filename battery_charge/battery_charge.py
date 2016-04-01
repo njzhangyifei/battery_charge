@@ -125,11 +125,10 @@ def get_battery_charge():
     battery_charge = None
     if platform == "linux" or platform == "linux2":
         # linux
-        pass
+        battery_charge = BatteryChargeLinux()
     elif platform == "darwin":
         # OS X
-        # battery_charge = BatteryChargeMac()
-        battery_charge = BatteryChargeLinux()
+        battery_charge = BatteryChargeMac()
     elif platform == "win32":
         # window
         battery_charge = BatteryChargeWin()
