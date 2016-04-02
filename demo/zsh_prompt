@@ -1,0 +1,54 @@
+#
+# This file only shows part of the zsh-theme.
+# To add this segment into your PS1, add call to prompt_battery into the build_prompt function
+#
+# Yifei Zhang, Apr. 2016
+#
+
+# battery charge
+battery(){
+  local bat_percentage
+  local bat_status
+  bat_info=`battery_charge | tr -d '\r\n'`
+  read bat_percentage bat_status <<< $(echo "$bat_info")
+  if ! ( [[ -n "$bat_status" ]] || [[ -n "$bat_percentage" ]] ); then
+    # something is wrong
+    return 1
+  fi
+
+  local battery_prompt_prefix
+  local battery_prompt_postfix
+  battery_prompt_prefix="BAT"
+  battery_prompt_postfix="%%"
+  if [[ "$bat_status" == "ac_power" ]]; then
+    battery_prompt_prefix="AC"
+  elif [[ "$bat_status" == "charging" ]]; then
+    battery_prompt_prefix="BAT"
+    battery_prompt_postfix+="+"
+  fi
+
+  local color_bg
+  local color_fg_percentage
+  local color_fg_status
+  if [[ "$bat_percentage" -lt 20 ]]; then
+    color_bg="red"
+    color_fg_percentage="white"
+    color_fg_status="white"
+  elif [[ "$bat_percentage" -lt 60 ]]; then
+    color_bg="black"
+    color_fg_percentage="yellow"
+    color_fg_status="cyan"
+  else
+    color_bg="black"
+    color_fg_percentage="green"
+    color_fg_status="cyan"
+  fi
+
+  battery_prompt_text=" %{%F{$color_fg_status}%}$battery_prompt_prefix"
+  battery_prompt_text+=" %{%F{$color_fg_percentage}%}$bat_percentage$battery_prompt_postfix "
+  prompt_segment $color_bg black $battery_prompt_text
+}
+
+prompt_battery(){
+  battery
+}
